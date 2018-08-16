@@ -72,7 +72,8 @@ PG_RESET_TEMPLATE(gpsRescueConfig_t, gpsRescueConfig,
     .throttleMax = 1600,
     .throttleHover = 1280,
     .sanityChecks = RESCUE_SANITY_ON,
-    .minSats = 8
+    .minSats = 8,
+    .minRescueDth = 100
 );
 
 static uint16_t rescueThrottle;
@@ -123,9 +124,9 @@ void updateGPSRescueState(void)
             hoverThrottle = gpsRescueConfig()->throttleHover;
         }
 
-        // Minimum distance detection (100m).  Disarm regardless of sanity check configuration.  Rescue too close is never a good idea.
-        if (rescueState.sensor.distanceToHome < 100) {
-            // Never allow rescue mode to engage as a failsafe within 100 meters or when disarmed.
+        // Minimum distance detection.  Disarm regardless of sanity check configuration.  Rescue too close is never a good idea.
+        if (rescueState.sensor.distanceToHome < gpsRescueConfig()->minRescueDth) {
+            // Never allow rescue mode to engage as a failsafe  when too close or when disarmed.
             if (rescueState.isFailsafe || !ARMING_FLAG(ARMED)) {
                 rescueState.failure = RESCUE_TOO_CLOSE;
                 setArmingDisabled(ARMING_DISABLED_ARM_SWITCH);
@@ -237,7 +238,7 @@ void sensorUpdate()
         rescueState.sensor.zVelocity = (rescueState.sensor.currentAltitude - previousAltitude) * 1000000.0f / dTime;
         rescueState.sensor.zVelocityAvg = 0.8f * rescueState.sensor.zVelocityAvg + rescueState.sensor.zVelocity * 0.2f;
 
-        rescueState.sensor.accMagnitude = (float) sqrt(sq(acc.accADC[Z]) + sq(acc.accADC[X]) + sq(acc.accADC[Y]) / sq(acc.dev.acc_1G));
+        rescueState.sensor.accMagnitude = (float) sqrtf(sq(acc.accADC[Z]) + sq(acc.accADC[X]) + sq(acc.accADC[Y])) * acc.dev.acc_1G_rec;
         rescueState.sensor.accMagnitudeAvg = (rescueState.sensor.accMagnitudeAvg * 0.8f) + (rescueState.sensor.accMagnitude * 0.2f);
 
         previousAltitude = rescueState.sensor.currentAltitude;

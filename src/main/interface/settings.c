@@ -768,6 +768,7 @@ const clivalue_t valueTable[] = {
     { "gps_rescue_throttle_hover",  VAR_UINT16 | MASTER_VALUE, .config.minmax = { 1000, 2000 }, PG_GPS_RESCUE, offsetof(gpsRescueConfig_t, throttleHover) },
     { "gps_rescue_sanity_checks",   VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_GPS_RESCUE }, PG_GPS_RESCUE, offsetof(gpsRescueConfig_t, sanityChecks) },
     { "gps_rescue_min_sats",        VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 50 }, PG_GPS_RESCUE, offsetof(gpsRescueConfig_t, minSats) },
+    { "gps_rescue_min_dth",         VAR_UINT16  | MASTER_VALUE, .config.minmax = { 50, 1000 }, PG_GPS_RESCUE, offsetof(gpsRescueConfig_t, minRescueDth) },
 #endif
 #endif
 
@@ -885,6 +886,12 @@ const clivalue_t valueTable[] = {
 #if defined(USE_TELEMETRY_SMARTPORT)
     { "smartport_use_extra_sensors", VAR_UINT8 | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, smartport_use_extra_sensors)},
 #endif
+#ifdef USE_TELEMETRY_MAVLINK
+    // Support for misusing the heading field in MAVlink to indicate mAh drawn for Connex Prosight OSD
+    // Set to 10 to show a tenth of your capacity drawn.
+    // Set to $size_of_battery to get a percentage of battery used.
+    { "mavlink_mah_as_heading_divisor", VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0, 30000 }, PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, mavlink_mah_as_heading_divisor) },
+#endif
 #endif // USE_TELEMETRY
 
 // PG_LED_STRIP_CONFIG
@@ -996,6 +1003,7 @@ const clivalue_t valueTable[] = {
     { "osd_stat_max_alt",           VAR_UINT32  | MASTER_VALUE | MODE_BITSET, .config.bitpos = OSD_STAT_MAX_ALTITUDE,    PG_OSD_CONFIG, offsetof(osdConfig_t, enabled_stats)},
     { "osd_stat_bbox",              VAR_UINT32  | MASTER_VALUE | MODE_BITSET, .config.bitpos = OSD_STAT_BLACKBOX,        PG_OSD_CONFIG, offsetof(osdConfig_t, enabled_stats)},
     { "osd_stat_bb_no",             VAR_UINT32  | MASTER_VALUE | MODE_BITSET, .config.bitpos = OSD_STAT_BLACKBOX_NUMBER, PG_OSD_CONFIG, offsetof(osdConfig_t, enabled_stats)},
+    { "osd_stat_max_g_force",       VAR_UINT32  | MASTER_VALUE | MODE_BITSET, .config.bitpos = OSD_STAT_MAX_G_FORCE,     PG_OSD_CONFIG, offsetof(osdConfig_t, enabled_stats)},
 
 #endif
 
