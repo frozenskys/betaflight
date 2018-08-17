@@ -199,6 +199,19 @@ typedef struct osdConfig_s {
 
 PG_DECLARE(osdConfig_t, osdConfig);
 
+typedef struct metadata_s {
+    bool is_legacy;
+    uint8_t metadata_version;
+    uint8_t firmware_type_identifier;
+    uint8_t firmware_font_version;
+    uint8_t font_id;
+    uint8_t ascii_offset;
+    uint8_t symbol_offset;
+    uint8_t pilot_logo_offset;
+    uint8_t boot_logo_offset;
+    uint8_t crc_value;
+} metadata_t;
+
 extern timeUs_t resumeRefreshAt;
 
 struct displayPort_s;

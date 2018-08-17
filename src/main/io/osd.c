@@ -212,6 +212,7 @@ static const uint8_t osdElementDisplayOrder[] = {
 #ifdef USE_ADC_INTERNAL
     OSD_CORE_TEMPERATURE,
 #endif
+    OSD_PILOT_LOGO,
 };
 
 PG_REGISTER_WITH_RESET_FN(osdConfig_t, osdConfig, PG_OSD_CONFIG, 3);
@@ -713,6 +714,20 @@ static bool osdDrawSingleElement(uint8_t item)
             osdGForce = sqrtf(osdGForce) * acc.dev.acc_1G_rec;
             tfp_sprintf(buff, "%01d.%01dG", (int)osdGForce, (int)(osdGForce * 10) % 10);
             break;
+        }
+
+    case OSD_PILOT_LOGO:
+        {
+            uint8_t offset = SYM_PILOT_LOGO;
+
+            for (int y = 0; y < 2; y++) {
+                for (int x = 0; x < 3; x++){
+                    displayWriteChar(osdDisplayPort, elemPosX + x, elemPosY + y, offset);
+                    offset++;
+                }
+            }
+
+            return true;
         }
 
     case OSD_ROLL_PIDS:
