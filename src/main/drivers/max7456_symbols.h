@@ -24,6 +24,7 @@
 //Misc
 #define SYM_END_OF_FONT             0xFF
 #define SYM_BLANK                   0x00
+#define SYM_COLON                   0x2D
 
 // Heading Graphics
 #define SYM_HEADING_N               0x01
@@ -117,7 +118,7 @@
 #define SYM_MAH                     0x7F
 
 // Menu cursor
-#define SYM_CURSOR SYM_AH_LEFT
+#define SYM_CURSOR                  SYM_AH_LEFT
 
 //New Features
 #define SYM_PILOT_LOGO              0xB1
