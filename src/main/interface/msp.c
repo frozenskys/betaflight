@@ -70,6 +70,7 @@
 
 #include "flight/position.h"
 #include "flight/failsafe.h"
+#include "flight/gps_rescue.h"
 #include "flight/imu.h"
 #include "flight/mixer.h"
 #include "flight/pid.h"
@@ -919,7 +920,7 @@ static bool mspProcessOutCommand(uint8_t cmdMSP, sbuf_t *dst)
 
     case MSP_ALTITUDE:
 #if defined(USE_BARO) || defined(USE_RANGEFINDER)
-        sbufWriteU32(dst, getEstimatedAltitude());
+        sbufWriteU32(dst, getEstimatedAltitudeCm());
 #else
         sbufWriteU32(dst, 0);
 #endif
@@ -1044,7 +1045,7 @@ static bool mspProcessOutCommand(uint8_t cmdMSP, sbuf_t *dst)
         sbufWriteU8(dst, gpsSol.numSat);
         sbufWriteU32(dst, gpsSol.llh.lat);
         sbufWriteU32(dst, gpsSol.llh.lon);
-        sbufWriteU16(dst, (uint16_t)constrain(gpsSol.llh.alt / 100, 0, UINT16_MAX)); // alt changed from 1m to 0.01m per lsb since MSP API 1.39 by RTH. To maintain backwards compatibility compensate to 1m per lsb in MSP again.
+        sbufWriteU16(dst, (uint16_t)constrain(gpsSol.llh.altCm / 100, 0, UINT16_MAX)); // alt changed from 1m to 0.01m per lsb since MSP API 1.39 by RTH. To maintain backwards compatibility compensate to 1m per lsb in MSP again.
         sbufWriteU16(dst, gpsSol.groundSpeed);
         sbufWriteU16(dst, gpsSol.groundCourse);
         break;
@@ -1064,6 +1065,31 @@ static bool mspProcessOutCommand(uint8_t cmdMSP, sbuf_t *dst)
            sbufWriteU8(dst, GPS_svinfo_cno[i]);
        }
         break;
+
+#ifdef USE_GPS_RESCUE
+    case MSP_GPS_RESCUE:
+        sbufWriteU16(dst, gpsRescueConfig()->angle);
+        sbufWriteU16(dst, gpsRescueConfig()->initialAltitudeM);
+        sbufWriteU16(dst, gpsRescueConfig()->descentDistanceM);
+        sbufWriteU16(dst, gpsRescueConfig()->rescueGroundspeed);
+        sbufWriteU16(dst, gpsRescueConfig()->throttleMin);
+        sbufWriteU16(dst, gpsRescueConfig()->throttleMax);
+        sbufWriteU16(dst, gpsRescueConfig()->throttleHover);
+        sbufWriteU16(dst, gpsRescueConfig()->throttleMax);
+        sbufWriteU8(dst,  gpsRescueConfig()->sanityChecks);
+        sbufWriteU8(dst,  gpsRescueConfig()->minSats);
+        break;
+
+    case MSP_GPS_RESCUE_PIDS:
+        sbufWriteU16(dst, gpsRescueConfig()->throttleP);
+        sbufWriteU16(dst, gpsRescueConfig()->throttleI);
+        sbufWriteU16(dst, gpsRescueConfig()->throttleD);
+        sbufWriteU16(dst, gpsRescueConfig()->velP);
+        sbufWriteU16(dst, gpsRescueConfig()->velI);
+        sbufWriteU16(dst, gpsRescueConfig()->velD);
+        sbufWriteU16(dst, gpsRescueConfig()->yawP);
+        break;
+#endif
 #endif
 
     case MSP_ACC_TRIM:
@@ -1732,6 +1758,30 @@ static mspResult_e mspProcessInCommand(uint8_t cmdMSP, sbuf_t *src)
         gpsConfigMutable()->autoConfig = sbufReadU8(src);
         gpsConfigMutable()->autoBaud = sbufReadU8(src);
         break;
+
+#ifdef USE_GPS_RESCUE
+        case MSP_SET_GPS_RESCUE:
+        gpsRescueConfigMutable()->angle = sbufReadU16(src);
+        gpsRescueConfigMutable()->initialAltitudeM = sbufReadU16(src);
+        gpsRescueConfigMutable()->descentDistanceM = sbufReadU16(src);
+        gpsRescueConfigMutable()->rescueGroundspeed = sbufReadU16(src);
+        gpsRescueConfigMutable()->throttleMin = sbufReadU16(src);
+        gpsRescueConfigMutable()->throttleMax = sbufReadU16(src);
+        gpsRescueConfigMutable()->throttleHover = sbufReadU16(src);
+        gpsRescueConfigMutable()->sanityChecks = sbufReadU8(src);
+        gpsRescueConfigMutable()->minSats = sbufReadU8(src);
+        break;
+
+    case MSP_SET_GPS_RESCUE_PIDS:
+        gpsRescueConfigMutable()->throttleP = sbufReadU16(src);
+        gpsRescueConfigMutable()->throttleI = sbufReadU16(src);
+        gpsRescueConfigMutable()->throttleD = sbufReadU16(src);
+        gpsRescueConfigMutable()->velP = sbufReadU16(src);
+        gpsRescueConfigMutable()->velI = sbufReadU16(src);
+        gpsRescueConfigMutable()->velD = sbufReadU16(src);
+        gpsRescueConfigMutable()->yawP = sbufReadU16(src);
+        break;
+#endif
 #endif
 
 #ifdef USE_MAG
@@ -2074,7 +2124,7 @@ static mspResult_e mspProcessInCommand(uint8_t cmdMSP, sbuf_t *src)
         gpsSol.numSat = sbufReadU8(src);
         gpsSol.llh.lat = sbufReadU32(src);
         gpsSol.llh.lon = sbufReadU32(src);
-        gpsSol.llh.alt = sbufReadU16(src) * 100; // alt changed from 1m to 0.01m per lsb since MSP API 1.39 by RTH. Received MSP altitudes in 1m per lsb have to upscaled.
+        gpsSol.llh.altCm = sbufReadU16(src) * 100; // alt changed from 1m to 0.01m per lsb since MSP API 1.39 by RTH. Received MSP altitudes in 1m per lsb have to upscaled.
         gpsSol.groundSpeed = sbufReadU16(src);
         GPS_update |= 2;        // New data signalisation to GPS functions // FIXME Magic Numbers
         break;

@@ -69,6 +69,7 @@
 #include "build/debug.h"
 
 #include "common/axis.h"
+#include "common/maths.h" 
 #include "common/time.h"
 
 #include "drivers/serial.h"
@@ -236,12 +237,12 @@ void hottPrepareGPSResponse(HOTT_GPS_MSG_t *hottGPSMessage)
     hottGPSMessage->home_distance_L = GPS_distanceToHome & 0x00FF;
     hottGPSMessage->home_distance_H = GPS_distanceToHome >> 8;
 
-    uint16_t altitude = gpsSol.llh.alt;
+    int32_t altitudeM = gpsSol.llh.altCm / 100;
     if (!STATE(GPS_FIX)) {
-        altitude = getEstimatedAltitude();
+        altitudeM = getEstimatedAltitudeCm() / 100;
     }
 
-    const uint16_t hottGpsAltitude = (altitude / 100) + HOTT_GPS_ALTITUDE_OFFSET; // gpsSol.llh.alt in m ; offset = 500 -> O m
+    const uint16_t hottGpsAltitude = constrain(altitudeM + HOTT_GPS_ALTITUDE_OFFSET, 0 , UINT16_MAX); // gpsSol.llh.alt in m ; offset = 500 -> O m
 
     hottGPSMessage->altitude_L = hottGpsAltitude & 0x00FF;
     hottGPSMessage->altitude_H = hottGpsAltitude >> 8;
@@ -259,14 +260,20 @@ static inline void updateAlarmBatteryStatus(HOTT_EAM_MSG_t *hottEAMMessage)
 {
     if (shouldTriggerBatteryAlarmNow()) {
         lastHottAlarmSoundTime = millis();
-        const batteryState_e batteryState = getBatteryState();
-        if (batteryState == BATTERY_WARNING  || batteryState == BATTERY_CRITICAL) {
+	const batteryState_e voltageState = getVoltageState();
+	const batteryState_e consumptionState = getConsumptionState();
+        if (voltageState == BATTERY_WARNING  || voltageState == BATTERY_CRITICAL) {
             hottEAMMessage->warning_beeps = 0x10;
             hottEAMMessage->alarm_invers1 = HOTT_EAM_ALARM1_FLAG_BATTERY_1;
-        } else {
+	}
+	else if (consumptionState == BATTERY_WARNING  || consumptionState == BATTERY_CRITICAL) {
+            hottEAMMessage->warning_beeps = 0x16;
+            hottEAMMessage->alarm_invers1 = HOTT_EAM_ALARM1_FLAG_MAH;
+	}		
+	else {
             hottEAMMessage->warning_beeps = HOTT_EAM_ALARM1_FLAG_NONE;
             hottEAMMessage->alarm_invers1 = HOTT_EAM_ALARM1_FLAG_NONE;
-        }
+	}
     }
 }
 
@@ -296,7 +303,7 @@ static inline void hottEAMUpdateBatteryDrawnCapacity(HOTT_EAM_MSG_t *hottEAMMess
 
 static inline void hottEAMUpdateAltitude(HOTT_EAM_MSG_t *hottEAMMessage)
 {
-    const uint16_t hottEamAltitude = (getEstimatedAltitude() / 100) + HOTT_EAM_OFFSET_HEIGHT;
+    const uint16_t hottEamAltitude = (getEstimatedAltitudeCm() / 100) + HOTT_EAM_OFFSET_HEIGHT;
 
     hottEAMMessage->altitude_L = hottEamAltitude & 0x00FF;
     hottEAMMessage->altitude_H = hottEamAltitude >> 8;

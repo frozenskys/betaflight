@@ -285,9 +285,9 @@ static char osdGetTemperatureSymbolForSelectedUnit(void)
 }
 #endif
 
-static void osdFormatAltitudeString(char * buff, int altitude)
+static void osdFormatAltitudeString(char * buff, int32_t altitudeCm)
 {
-    const int alt = osdGetMetersToSelectedUnit(altitude) / 10;
+    const int alt = osdGetMetersToSelectedUnit(altitudeCm) / 10;
 
     tfp_sprintf(buff, "%5d %c", alt, osdGetMetersToSelectedUnitSymbol());
     buff[5] = buff[4];
@@ -565,7 +565,7 @@ static bool osdDrawSingleElement(uint8_t item)
         break;
 
     case OSD_ALTITUDE:
-        osdFormatAltitudeString(buff, getEstimatedAltitude());
+        osdFormatAltitudeString(buff, getEstimatedAltitudeCm());
         break;
 
     case OSD_ITEM_TIMER_1:
@@ -1155,7 +1155,7 @@ void osdUpdateAlarms(void)
 {
     // This is overdone?
 
-    int32_t alt = osdGetMetersToSelectedUnit(getEstimatedAltitude()) / 100;
+    int32_t alt = osdGetMetersToSelectedUnit(getEstimatedAltitudeCm()) / 100;
 
     if (getRssiPercent() < osdConfig()->rssi_alarm) {
         SET_BLINK(OSD_RSSI_VALUE);
@@ -1288,9 +1288,9 @@ static void osdUpdateStats(void)
         stats.min_rssi = value;
     }
 
-    int altitude = getEstimatedAltitude();
-    if (stats.max_altitude < altitude) {
-        stats.max_altitude = altitude;
+    int32_t altitudeCm = getEstimatedAltitudeCm();
+    if (stats.max_altitude < altitudeCm) {
+        stats.max_altitude = altitudeCm;
     }
 
     if (stats.max_g_force < osdGForce) {
